@@ -8,9 +8,10 @@ from oxford_learners_scraper.utils import simple_get, mocked_get
 class OxfordLearnerScraper:
 
     def __init__(
-        self, word, split_meanings=False, pos=None, senses=0,
-        examples=0, idioms=True, phrasal=True, synonyms=True
+            self, word, split_meanings=False, pos=None, senses=0,
+            examples=0, idioms=True, phrasal=True, synonyms=True
     ):
+        self.SEARCH_BASE_URL = 'https://www.oxfordlearnersdictionaries.com/search/american_english/'
         self.BASE_URL = 'https://www.oxfordlearnersdictionaries.com/definition/american_english/'
         self.word = word
         self.split_meanings = split_meanings
@@ -24,13 +25,19 @@ class OxfordLearnerScraper:
         self.synonyms = synonyms
 
     def build_url(self, variation=1):
+        if ' ' in self.word:
+            w = self.word.replace(' ', '+')
+            return f"{self.SEARCH_BASE_URL}?q={w}"
         return f"{self.BASE_URL}{self.word}_{variation}"
 
     def get_html(self):
         raw_html = simple_get(self.url)
         if raw_html is None:
             return None
-        return BeautifulSoup(raw_html, 'html.parser')
+        html = BeautifulSoup(raw_html, 'html.parser')
+        if ' ' in self.word:
+            self.word = html.select('.webtop-g .h')[0].text
+        return html
 
     def no_more_variations(self):
         """Check if no more part of speech exists"""
@@ -76,7 +83,7 @@ class OxfordLearnerScraper:
     def parse_idiom(self, idiom):
         value = self.get_text(idiom, 'idm', join_=True)
         extra_label = self.get_text(idiom, 'label-g', raising=False)
-        definition = self.get_text(idiom, 'def')
+        definition = self.get_text(idiom, 'def', join_=True)
         examples = '\n'.join(el.text for el in idiom.select('.x'))
         # return value, f'{extra_label} {definition}', examples
         return f"{value} - {extra_label} {definition}\n{examples}\n"
@@ -88,7 +95,7 @@ class OxfordLearnerScraper:
         if self.examples_limit:
             examples = examples[:self.examples_limit]
         examples_str = '\n'.join(examples)
-        return {'definition': f"{definition}\n\n{examples_str} >"}
+        return {'definition': f"{definition}\n\n{examples_str}"}
 
     def handle_senses(self, senses):
         res = {"term": self.word, 'link': self.url, 'definition': ''}
@@ -98,10 +105,12 @@ class OxfordLearnerScraper:
         else:
             for i, sense in enumerate(senses, start=1):
                 if self.senses_limit and i > self.senses_limit:
-                    return res
+                    break
                 res['definition'] += f'{i}) '
                 res['definition'] += self.parse_sense(sense)['definition']
-                res['definition'] += '\n\n'
+                if i != count:
+                    res['definition'] += '\n\n'
+        res['definition'] += '>'
         return res
 
     def get_synonyms(self):
@@ -116,8 +125,9 @@ class OxfordLearnerScraper:
             return self._parse()
         result = []
         for i in range(1, 30, 1):
-            self.build_url(variation=i)
-            self.get_html()
+            import ipdb; ipdb.set_trace()
+            self.url = self.build_url(variation=i)
+            self.html = self.get_html()
             if self.no_more_variations():
                 break
             result.extend(self._parse())
@@ -125,7 +135,7 @@ class OxfordLearnerScraper:
 
     def _parse(self) -> List:
         row = {"term": self.word, 'link': self.url}
-        current_pos = set(el.text for el in self.html.select('.pos'))
+        current_pos = set(el.text for el in self.html.select('.pos')).pop()
         if self.pos and current_pos not in self.pos:
             return []
         senses = self.get_senses()
@@ -140,3 +150,9 @@ class OxfordLearnerScraper:
         if self.split_meanings:
             result.extend(senses[1:])
         return result
+
+    def get_word(self):
+        return self.html.select('.webtop-g .h')[0].text
+
+    def get_pos(self):
+        return self.html.select('.webtop-g .pos')[0].text

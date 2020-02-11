@@ -5,7 +5,7 @@ from cleo import Application
 
 cmd = ImportCommand()
 
-app = Application('ols', '0.1.1')
+app = Application('ols')
 app.add(cmd.default())
 
 

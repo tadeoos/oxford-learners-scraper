@@ -1,7 +1,10 @@
+import os
+from datetime import datetime
+
 from cleo import Command
+import xlsxwriter
 
 from oxford_learners_scraper.scraper import OxfordLearnerScraper
-import xlsxwriter
 
 
 class ImportCommand(Command):
@@ -11,11 +14,11 @@ class ImportCommand(Command):
     import
         {terms* : What words should we import?}
         {--p|part-of-speech=* : specify part(s) of speech to import. If omitted the default one ("_1" suffix) will be imported}
-        {--m|meanings= : restrict number of meanings}
-        {--e|examples= : restrict number of examples}
-        {--i|idioms : include idioms}
-        {--r|phrasal : include phrasal verbs}
-        {--s|synonyms : include synonyms}
+        {--m|meanings=3 : restrict number of meanings}
+        {--e|examples=3 : restrict number of examples}
+        {--i|idioms : exclude idioms}
+        {--r|phrasal : exclude phrasal verbs}
+        {--s|synonyms : exclude synonyms}
         {--x|split-meanings : split meanings into separate terms}
         {--f|file= : file name of the generated file}
     """
@@ -23,11 +26,11 @@ class ImportCommand(Command):
     def get_kwargs(self):
         return {
             'pos': self.option('p') or None,
-            'senses': int(self.option('m') or '0'),
-            'examples': int(self.option('e') or '0'),
-            'idioms': self.option('idioms'),
-            'phrasal': self.option('phrasal'),
-            'synonyms': self.option('synonyms'),
+            'senses': int(self.option('m') or '3'),
+            'examples': int(self.option('e') or '3'),
+            'idioms': not self.option('idioms'),
+            'phrasal': not self.option('phrasal'),
+            'synonyms': not self.option('synonyms'),
             'split_meanings': self.option('x'),
         }
 
@@ -43,7 +46,8 @@ class ImportCommand(Command):
 
     def handle(self):
         headers = ['term', 'definition', 'link', 'synonyms', 'idioms', 'phrasal verbs']
-        filename = self.option('f') or "files/example.xlsx"
+        output_dir = os.environ.get("OLS_OUTPUT_DIR", '.')
+        filename = os.path.join(output_dir, self.option('f') or f"ols_import_{datetime.now()}.xlsx")
         words = self.argument('terms')
         rows = []
         for word in words:
@@ -57,7 +61,7 @@ class ImportCommand(Command):
         worksheet = workbook.add_worksheet()
         worksheet.set_column('A:F', 30)
         worksheet.write_row(0, 0, headers)
-        self.info(f'Generating excel file: {filename}...')
+        self.info(f'Saving excel file to: {filename}...')
         for i, r_ in enumerate(xls_rows, start=1):
             worksheet.write_row(i, 0, r_)
         workbook.close()
