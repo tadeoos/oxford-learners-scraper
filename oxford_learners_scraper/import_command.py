@@ -20,7 +20,7 @@ class ImportCommand(Command):
         {--r|phrasal : exclude phrasal verbs}
         {--s|synonyms : exclude synonyms}
         {--x|split-meanings : split meanings into separate terms}
-        {--f|file= : file name of the generated file}
+        {--f|file= : file name of the generated file, you can omit `.xlsx` suffix. Defaults to `ols_import_TIMESTAMP` }
     """
 
     def get_kwargs(self):
@@ -48,6 +48,8 @@ class ImportCommand(Command):
         headers = ['term', 'definition', 'link', 'synonyms', 'idioms', 'phrasal verbs']
         output_dir = os.environ.get("OLS_OUTPUT_DIR", '.')
         filename = os.path.join(output_dir, self.option('f') or f"ols_import_{datetime.now()}.xlsx")
+        if not filename.endswith('.xlsx'):
+            filename += '.xlsx'
         words = self.argument('terms')
         rows = []
         for word in words:
