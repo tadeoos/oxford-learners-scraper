@@ -10,14 +10,14 @@ class ImportCommand(Command):
 
     import
         {terms* : What words should we import?}
-        {--p|part-of-speech=* : wydaje mi się, że ten słownik automatycznie wybiera część mowy opisaną jako _1 w adresie i chciałbym żeby to printował defaultowo jeśli zostawie to pole puste, jeśli wpiszę to chciałbym żeby crawler wybrał odpowiedni wpis.}
-        {--m|meanings= : puste = printuj wszystkie, to samo w “examples to print”}
+        {--p|part-of-speech=* : specify part(s) of speech to import. If omitted the default one ("_1" suffix) will be imported}
+        {--m|meanings= : restrict number of meanings}
         {--e|examples= : restrict number of examples}
         {--i|idioms : include idioms}
         {--r|phrasal : include phrasal verbs}
         {--s|synonyms : include synonyms}
         {--x|split-meanings : split meanings into separate terms}
-        {--f|file : file name of the generated file}
+        {--f|file= : file name of the generated file}
     """
 
     def get_kwargs(self):
