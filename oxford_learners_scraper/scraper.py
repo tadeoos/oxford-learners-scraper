@@ -59,8 +59,7 @@ class OxfordLearnerScraper:
     @staticmethod
     def parse_phrasal_verbs(pv):
         href = pv.attrs['href']
-        return f'HYPERLINK("{href}", "{pv.text}")'
-        # return f"<a href={pv.attrs['href']}>{pv.text}</a>"
+        return f"{pv.text}\n{href}\n\n"
 
     def get_senses(self):
         senses = self.html.select('.top-container')[0].findNextSibling().select('.sn-g')
@@ -89,11 +88,12 @@ class OxfordLearnerScraper:
         if self.examples_limit:
             examples = examples[:self.examples_limit]
         examples_str = '\n'.join(examples)
-        return {'definition': f"{definition}\n\n{examples_str}"}
+        return {'definition': f"{definition}\n\n{examples_str} >"}
 
     def handle_senses(self, senses):
         res = {"term": self.word, 'link': self.url, 'definition': ''}
-        if len(senses) < 2:
+        count = len(senses)
+        if count < 2:
             res.update(self.parse_sense(senses[0]))
         else:
             for i, sense in enumerate(senses, start=1):

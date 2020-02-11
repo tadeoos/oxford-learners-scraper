@@ -3,12 +3,14 @@
 from oxford_learners_scraper.import_command import ImportCommand
 from cleo import Application
 
-application = Application()
-application.add(ImportCommand())
+cmd = ImportCommand()
+
+app = Application('ols', '0.1.1')
+app.add(cmd.default())
 
 
 def run():
-    application.run()
+    app.run()
 
 
 if __name__ == '__main__':
