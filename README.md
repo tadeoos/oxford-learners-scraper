@@ -74,4 +74,4 @@ Done. Have a nice day!
 ```
 
 
-Made with <3 for [Talking Heads](http://talking-heads.pl/)
+Made with :heart: for [Talking Heads](http://talking-heads.pl/)
