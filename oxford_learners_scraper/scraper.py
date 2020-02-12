@@ -112,7 +112,10 @@ class OxfordLearnerScraper:
     def parse_sense(self, sens):
         sub = ' ' + '_ ' * len(self.word)
         # gram = sens.find_all(class_='gram')  # transitive / intransitive
-        definition = sens.find(class_='def').get_text()
+        try:
+            definition = sens.find(class_='def').get_text()
+        except AttributeError:
+            definition = sens.parent.find(class_='shcut').get_text()
         term = self._get_meaning_term(sens)
         examples = [f'"{el.text.replace(self.word, sub)}"' for el in sens.select('.sn-g > .x-gs .x')]
         if self.examples_limit:
