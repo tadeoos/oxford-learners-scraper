@@ -7,6 +7,10 @@ from oxford_learners_scraper.utils import simple_get, mocked_get
 
 class OxfordLearnerScraper:
 
+    PHRASAL_VERBS_SELECTOR = '.pv-gs a'
+    IDIOMS_SELECTOR = '.idm-gs .idm-g'
+    WORD_SELECTOR = '.webtop-g .h'
+
     def __init__(
             self, word, split_meanings=False, pos=None, senses=0,
             examples=0, idioms=True, phrasal=True, synonyms=True
@@ -36,7 +40,7 @@ class OxfordLearnerScraper:
             return None
         html = BeautifulSoup(raw_html, 'html.parser')
         if ' ' in self.word:
-            self.word = html.select('.webtop-g .h')[0].text
+            self.word = html.select(self.WORD_SELECTOR)[0].text
         return html
 
     def no_more_variations(self):
@@ -50,13 +54,13 @@ class OxfordLearnerScraper:
             if join_ and len(res) > 1:
                 return ','.join(r.text for r in res)
             elif raising:
-                raise ValueError(f"Res: {res}")
+                raise ValueError(f"Different then one object found: {res}")
             else:
                 return ''
         return res[0].text
 
     def get_phrasal_verbs(self):
-        phrasal_verbs = self.html.select('.pv-gs a')
+        phrasal_verbs = self.html.select(self.PHRASAL_VERBS_SELECTOR)
         return {
             'phrasal': '\n'.join(
                 [self.parse_phrasal_verbs(pv) for pv in phrasal_verbs]
@@ -75,7 +79,7 @@ class OxfordLearnerScraper:
         return [self.handle_senses(senses)]
 
     def get_idioms(self):
-        idioms = self.html.select('.idm-gs .idm-g')
+        idioms = self.html.select(self.IDIOMS_SELECTOR)
         return {
             'idioms': '\n'.join([self.parse_idiom(i) for i in idioms])
         }
@@ -88,14 +92,33 @@ class OxfordLearnerScraper:
         # return value, f'{extra_label} {definition}', examples
         return f"{value} - {extra_label} {definition}\n{examples}\n"
 
+    def _get_meaning_term(self, sens):
+        if not self.split_meanings:
+            return self.word
+        cf = None
+        for tag in filter(lambda el: 'x-gs' not in getattr(el, 'attrs', {}).get('class', []), sens.childGenerator()):
+            if cf is None:
+                try:
+                    if 'cf' in tag.attrs['class']:
+                        cf = tag.get_text()
+                except (AttributeError, TypeError, KeyError):
+                    pass
+        if cf is None:
+            return self.word
+        if cf.startswith('+'):
+            return f'{self.word} {cf}'
+        return cf
+
     def parse_sense(self, sens):
         sub = ' ' + '_ ' * len(self.word)
-        definition = sens.select('.def')[0].text
+        # gram = sens.find_all(class_='gram')  # transitive / intransitive
+        definition = sens.find(class_='def').get_text()
+        term = self._get_meaning_term(sens)
         examples = [f'"{el.text.replace(self.word, sub)}"' for el in sens.select('.sn-g > .x-gs .x')]
         if self.examples_limit:
             examples = examples[:self.examples_limit]
         examples_str = '\n'.join(examples)
-        return {'definition': f"{definition}\n\n{examples_str}"}
+        return {'term': term, 'definition': f"{definition}\n\n{examples_str}"}
 
     def handle_senses(self, senses):
         res = {"term": self.word, 'link': self.url, 'definition': ''}
@@ -125,7 +148,6 @@ class OxfordLearnerScraper:
             return self._parse()
         result = []
         for i in range(1, 30, 1):
-            import ipdb; ipdb.set_trace()
             self.url = self.build_url(variation=i)
             self.html = self.get_html()
             if self.no_more_variations():
@@ -135,7 +157,7 @@ class OxfordLearnerScraper:
 
     def _parse(self) -> List:
         row = {"term": self.word, 'link': self.url}
-        current_pos = set(el.text for el in self.html.select('.pos')).pop()
+        current_pos = set(el.get_text() for el in self.html.select('.pos')).pop()
         if self.pos and current_pos not in self.pos:
             return []
         senses = self.get_senses()
@@ -150,9 +172,3 @@ class OxfordLearnerScraper:
         if self.split_meanings:
             result.extend(senses[1:])
         return result
-
-    def get_word(self):
-        return self.html.select('.webtop-g .h')[0].text
-
-    def get_pos(self):
-        return self.html.select('.webtop-g .pos')[0].text
