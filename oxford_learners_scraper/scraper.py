@@ -29,7 +29,7 @@ class OxfordLearnerScraper:
         self.synonyms = synonyms
 
     def build_url(self, variation=1):
-        if ' ' in self.word:
+        if ' ' in self.word or variation < 2:
             w = self.word.replace(' ', '+')
             return f"{self.SEARCH_BASE_URL}?q={w}"
         return f"{self.BASE_URL}{self.word}_{variation}"
