@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "oxford-learners-scraper"
-version = "0.2.2"
+version = "0.2.3"
 description = "Scraper for Oxford Learners Dictionary"
 authors = ["Tadek Teleżyński <tadekte@gmail.com>"]
 

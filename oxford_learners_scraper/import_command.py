@@ -45,6 +45,8 @@ class ImportCommand(Command):
         return result
 
     def handle(self):
+        self.add_style('red', fg='red')
+        self.add_style('blue', fg='blue')
         headers = ['term', 'definition', 'link', 'synonyms', 'idioms', 'phrasal verbs']
         output_dir = os.environ.get("OLS_OUTPUT_DIR", '.')
         filename = os.path.join(output_dir, self.option('f') or f"ols_import_{datetime.now()}.xlsx")
@@ -53,9 +55,17 @@ class ImportCommand(Command):
         words = self.argument('terms')
         rows = []
         for word in words:
-            self.info(f'Obtaining word "{word}"...')
+            self.line(f'Obtaining word "{word}"...', style="blue")
             ols = OxfordLearnerScraper(word, **self.get_kwargs())
-            row = ols.parse()
+            try:
+                row = ols.parse()
+            except Exception as e:
+                if self.io.verbosity > 2:
+                    raise e
+                row = [{'term': ols.word, 'definition': f'Error occured: {e}'}]
+                msg = f'Error for word "{word}": {e}. Run with `-vvv` for details. Continuing...'
+                self.line_error(msg, style="red")
+
             rows.extend(row)
 
         xls_rows = self.get_rows(rows, headers)
@@ -63,7 +73,7 @@ class ImportCommand(Command):
         worksheet = workbook.add_worksheet()
         worksheet.set_column('A:F', 30)
         worksheet.write_row(0, 0, headers)
-        self.info(f'Saving excel file to: {filename}...')
+        self.comment(f'Saving excel file to: {filename}...')
         for i, r_ in enumerate(xls_rows, start=1):
             worksheet.write_row(i, 0, r_)
         workbook.close()
