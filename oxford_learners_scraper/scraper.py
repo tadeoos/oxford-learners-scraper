@@ -40,8 +40,22 @@ class OxfordLearnerScraper:
             return None
         html = BeautifulSoup(raw_html, 'html.parser')
         if ' ' in self.word:
-            self.word = html.select(self.WORD_SELECTOR)[0].text
+            try:
+                self.word = html.select(self.WORD_SELECTOR)[0].text
+            except IndexError:
+                raise ValueError(self.get_not_found_message(html))
         return html
+
+    @staticmethod
+    def get_not_found_message(html):
+        try:
+            suggestions = html.find(class_='result-list').get_text()
+        except AttributeError:
+            return "Not found."
+
+        suggestions.split('\n')
+        message = '\n'.join(['-' + s for s in suggestions.strip('\n').split('\n') if s])
+        return "Not found. Did you mean...\n" + message + '\n'
 
     def no_more_variations(self):
         """Check if no more part of speech exists"""
@@ -115,7 +129,8 @@ class OxfordLearnerScraper:
         try:
             definition = sens.find(class_='def').get_text()
         except AttributeError:
-            definition = sens.parent.find(class_='shcut').get_text()
+            backup_def = sens.parent.find(class_='shcut')
+            definition = backup_def.get_text() if backup_def else ''
         term = self._get_meaning_term(sens)
         examples = [f'"{el.text.replace(self.word, sub)}"' for el in sens.select('.sn-g > .x-gs .x')]
         if self.examples_limit:
@@ -160,7 +175,10 @@ class OxfordLearnerScraper:
 
     def _parse(self) -> List:
         row = {"term": self.word, 'link': self.url}
-        current_pos = set(el.get_text() for el in self.html.select('.pos')).pop()
+        try:
+            current_pos = set(el.get_text() for el in self.html.select('.pos')).pop()
+        except KeyError:
+            raise ValueError(self.get_not_found_message(self.html))
         if self.pos and current_pos not in self.pos:
             return []
         senses = self.get_senses()

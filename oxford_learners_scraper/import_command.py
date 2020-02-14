@@ -56,14 +56,14 @@ class ImportCommand(Command):
         rows = []
         for word in words:
             self.line(f'Obtaining word "{word}"...', style="blue")
-            ols = OxfordLearnerScraper(word, **self.get_kwargs())
             try:
+                ols = OxfordLearnerScraper(word, **self.get_kwargs())
                 row = ols.parse()
             except Exception as e:
                 if self.io.verbosity > 2:
                     raise e
-                row = [{'term': ols.word, 'definition': f'Error occured: {e}'}]
-                msg = f'Error for word "{word}": {e}. Run with `-vvv` for details. Continuing...'
+                row = [{'term': word, 'definition': f'Error occured: {e}'}]
+                msg = f'Error for word "{word}": {e}\nRun with `-vvv` for details. Continuing...'
                 self.line_error(msg, style="red")
 
             rows.extend(row)
