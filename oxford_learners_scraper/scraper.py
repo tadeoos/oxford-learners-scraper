@@ -2,6 +2,7 @@ from typing import Dict, Optional, Union, List
 
 from bs4 import BeautifulSoup
 
+from newspaper.network import get_html_2XX_only
 from oxford_learners_scraper.utils import simple_get, mocked_get
 
 
@@ -35,7 +36,7 @@ class OxfordLearnerScraper:
         return f"{self.BASE_URL}{self.word}_{variation}"
 
     def get_html(self):
-        raw_html = simple_get(self.url)
+        raw_html = get_html_2XX_only(self.url)
         if raw_html is None:
             return None
         html = BeautifulSoup(raw_html, 'html.parser')

@@ -10,6 +10,7 @@ requests = "^2.22.0"
 cleo = "^0.7.6"
 XlsxWriter = "^1.2.7"
 beautifulsoup4 = "^4.8.2"
+newspaper3k = "^0.2.8"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.12.0"
